@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataLens — Data Analyser</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#68758b;--line:#e3e9f2;--blue:#315eea;--blue2:#eaf0ff;--green:#16845b;--shadow:0 8px 28px rgba(28,45,80,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:#111d38;color:white;padding:25px max(22px,calc((100% - 1240px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-size:22px;font-weight:800;letter-spacing:-.5px}.brand span{color:#8eacff}.tag{color:#c4cee3;font-size:13px}
+main{max-width:1240px;margin:28px auto;padding:0 20px 60px}.intro{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:20px}.intro h1{font-size:27px;margin:0 0 4px;letter-spacing:-.7px}.intro p{margin:0;color:var(--muted)}
+button,.btn{border:0;border-radius:10px;padding:10px 15px;background:var(--blue);color:white;font-weight:700;cursor:pointer;font-size:14px}button.secondary{background:#eef2f8;color:#27344d}button:disabled{opacity:.45;cursor:not-allowed}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+.upload{border:2px dashed #bdc9df;border-radius:14px;text-align:center;padding:27px 15px;background:#fbfcff;transition:.15s}.upload.drag{background:var(--blue2);border-color:var(--blue)}.upload strong{display:block;font-size:17px}.upload p{color:var(--muted);margin:5px 0 14px}.upload input{display:none}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar input,.toolbar select,.controls select,.controls input{border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:white;color:var(--ink);font:inherit;min-width:0}
+.toolbar input{flex:1;min-width:180px}.file-meta{color:var(--muted);font-size:13px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.metric{background:white;border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:var(--shadow)}.metric .label{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}.metric .value{font-size:25px;font-weight:800;margin-top:5px;overflow-wrap:anywhere}.metric .sub{font-size:12px;color:var(--muted)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.section-head h2{font-size:17px;margin:0}.section-head small{color:var(--muted)}
+.controls{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px;max-height:440px}table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}th{position:sticky;top:0;background:#f5f7fb;color:#536078;z-index:1}tr:last-child td{border-bottom:0}td.num{text-align:right;font-variant-numeric:tabular-nums}
+.analysis-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}.chart-box{height:300px;position:relative}.summary-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.summary-item{padding:12px;background:#f6f8fc;border-radius:10px}.summary-item span{display:block;color:var(--muted);font-size:12px}.summary-item b{font-size:17px;overflow-wrap:anywhere}
+.notice{padding:12px 14px;background:#f0f5ff;color:#304a88;border-radius:10px;font-size:13px;margin-top:12px}.empty{color:var(--muted);text-align:center;padding:28px 12px}.footer{text-align:center;color:var(--muted);font-size:12px;margin-top:25px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.analysis-grid{grid-template-columns:1fr}.intro{align-items:start;flex-direction:column}}
+@media(max-width:480px){main{padding:0 12px 35px}.panel{padding:14px}.grid{gap:9px}.metric{padding:12px}.metric .value{font-size:21px}header{padding:18px 15px}.tag{display:none}}
+</style>
+</head>
+<body>
+<header><div class="brand">Data<span>Lens</span></div><div class="tag">A private, browser-based data workspace</div></header>
+<main>
+  <div class="intro"><div><h1>Data analyser</h1><p>Import a file, explore the rows, and turn your data into useful insights.</p></div><button class="secondary" id="resetBtn">Clear workspace</button></div>
+  <section class="panel">
+    <div class="upload" id="dropZone">
+      <strong>Drop a data file here</strong>
+      <p>or choose a file from your device</p>
+      <label class="btn" for="fileInput">Choose file</label>
+      <input id="fileInput" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json">
+      <div class="file-meta">Supported: CSV, TSV, TXT, Excel (.xlsx, .xls), JSON</div>
+    </div>
+    <div class="file-meta" id="status">Your data stays in this browser. Nothing is uploaded to a server.</div>
+  </section>
+
+  <div id="workspace" hidden>
+    <div class="toolbar panel">
+      <input id="globalSearch" placeholder="Search all columns…">
+      <button class="secondary" id="downloadCsv">Download filtered CSV</button>
+      <button class="secondary" id="downloadReport">Export analysis report</button>
+    </div>
+    <div class="grid">
+      <div class="metric"><div class="label">Rows</div><div class="value" id="rowsMetric">—</div><div class="sub">In the imported dataset</div></div>
+      <div class="metric"><div class="label">Columns</div><div class="value" id="colsMetric">—</div><div class="sub">Detected fields</div></div>
+      <div class="metric"><div class="label">Missing cells</div><div class="value" id="missingMetric">—</div><div class="sub" id="missingSub">Blank or empty values</div></div>
+      <div class="metric"><div class="label">Duplicate rows</div><div class="value" id="duplicateMetric">—</div><div class="sub">Exact row matches</div></div>
+    </div>
+
+    <div class="analysis-grid">
+      <section class="panel">
+        <div class="section-head"><h2>Visual analysis</h2><small>Choose a column to explore</small></div>
+        <div class="controls">
+          <label>Column<select id="columnSelect"></select></label>
+          <label>Chart type<select id="chartType"><option value="bar">Bar</option><option value="line">Line</option><option value="doughnut">Doughnut</option></select></label>
+        </div>
+        <div class="chart-box"><canvas id="mainChart"></canvas></div>
+        <div class="notice" id="chartNote">Numeric columns are grouped into ranges. Text columns show the most common values.</div>
+      </section>
+      <section class="panel">
+        <div class="section-head"><h2>Column summary</h2><small id="summaryName"></small></div>
+        <div class="summary-list" id="summaryList"><div class="empty">Import a file to see statistics.</div></div>
+        <div class="notice">For numeric columns, statistics include minimum, maximum, mean and median. Text columns show distinct and most common values.</div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="section-head"><h2>Data preview</h2><small id="previewCount"></small></div>
+      <div class="controls">
+        <label>Rows per page<select id="pageSize"><option>25</option><option>50</option><option>100</option><option>250</option></select></label>
+        <button class="secondary" id="prevPage">Previous</button><button class="secondary" id="nextPage">Next</button>
+        <span id="pageLabel" class="file-meta"></span>
+      </div>
+      <div class="table-wrap"><table id="dataTable"></table></div>
+    </section>
+  </div>
+  <div class="footer">DataLens • Your files are processed locally in your browser. Keep your own backup of important source files.</div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let headers=[], rows=[], filtered=[], page=0, chart=null, filename='data';
+const isBlank = v => v === null || v === undefined || String(v).trim() === '';
+const display = v => isBlank(v) ? '—' : String(v);
+const num = v => { if(typeof v==='number' && Number.isFinite(v)) return v; if(typeof v!=='string') return null; const s=v.trim().replace(/[$,%£€,\s]/g,''); if(!s || !/^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(s)) return null; const n=Number(s); return Number.isFinite(n)?n:null; };
+function setStatus(s){$('status').textContent=s;}
+function parseCSV(text, delimiter){
+  const out=[]; let row=[], cell='', quoted=false;
+  for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];
+    if(c==='"' && quoted && n==='"'){cell+='"';i++;}
+    else if(c==='"'){quoted=!quoted;}
+    else if(c===delimiter && !quoted){row.push(cell);cell='';}
+    else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&n==='\n')i++;row.push(cell);out.push(row);row=[];cell='';}
+    else cell+=c;
+  }
+  if(cell.length||row.length){row.push(cell);out.push(row);}
+  return out.filter(r=>r.some(x=>String(x).trim()!==''));
+}
+function normalise(records){
+  if(!records.length) throw Error('The file appears to be empty.');
+  if(Array.isArray(records[0]) && records[0].length){
+    headers=records[0].map((h,i)=>String(isBlank(h)?`Column ${i+1}`:h).trim());
+    rows=records.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??''])));
+  } else if(typeof records[0]==='object' && records[0]!==null){
+    headers=[...new Set(records.flatMap(o=>Object.keys(o)))];
+    rows=records.map(o=>Object.fromEntries(headers.map(h=>[h,o[h]??''])));
+  } else throw Error('Could not recognise a table. Please use CSV, Excel or JSON records.');
+  if(!headers.length) throw Error('No columns were found.');
+}
+async function loadFile(file){
+  try{
+    filename=file.name.replace(/\.[^.]+$/,'')||'data';
+    const ext=file.name.split('.').pop().toLowerCase(); let records;
+    if(['xlsx','xls'].includes(ext)){
+      if(!window.XLSX) throw Error('Excel support could not load. Check your internet connection and try again.');
+      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}); const sheet=wb.Sheets[wb.SheetNames[0]];
+      records=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+    }else if(ext==='json'){
+      const parsed=JSON.parse(await file.text());
+      records=Array.isArray(parsed)?parsed:(Array.isArray(parsed.data)?parsed.data:null);
+      if(!records) throw Error('JSON should contain an array of records, or an object with a data array.');
+    }else{
+      const txt=await file.text(); const first=txt.split(/\r?\n/)[0]||'';
+      const candidates=[',',';','\t']; const delimiter=candidates.sort((a,b)=>first.split(b).length-first.split(a).length)[0];
+      records=parseCSV(txt,delimiter);
+    }
+    normalise(records); page=0; $('workspace').hidden=false; $('globalSearch').value='';
+    $('rowsMetric').textContent=rows.length.toLocaleString(); $('colsMetric').textContent=headers.length.toLocaleString();
+    const missing=rows.reduce((sum,r)=>sum+headers.filter(h=>isBlank(r[h])).length,0);
+    const dup=rows.length-new Set(rows.map(r=>JSON.stringify(headers.map(h=>r[h])))).size;
+    $('missingMetric').textContent=missing.toLocaleString(); $('missingSub').textContent=`${((missing/(Math.max(1,rows.length*headers.length)))*100).toFixed(1)}% of all cells`;
+    $('duplicateMetric').textContent=dup.toLocaleString();
+    $('columnSelect').innerHTML=headers.map((h,i)=>`<option value="${i}">${escapeHtml(h)}</option>`).join('');
+    filtered=[...rows]; renderAll();
+    setStatus(`Loaded ${file.name} • ${rows.length.toLocaleString()} rows • ${headers.length} columns`);
+  }catch(e){setStatus('Import failed: '+e.message);}
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderAll(){renderTable();renderAnalysis();}
+function renderTable(){
+  const size=Number($('pageSize').value), pages=Math.max(1,Math.ceil(filtered.length/size)); page=Math.min(page,pages-1);
+  const start=page*size, subset=filtered.slice(start,start+size);
+  $('previewCount').textContent=`${filtered.length.toLocaleString()} matching rows`;
+  $('pageLabel').textContent=`Page ${page+1} of ${pages}`;
+  $('prevPage').disabled=page===0;$('nextPage').disabled=page>=pages-1;
+  $('dataTable').innerHTML='<thead><tr>'+headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')+'</tr></thead><tbody>'+
+    (subset.length?subset.map(r=>'<tr>'+headers.map(h=>`<td>${escapeHtml(display(r[h]))}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${headers.length}" class="empty">No matching rows.</td></tr>`)+
+    '</tbody>';
+}
+function renderAnalysis(){
+  if(!headers.length)return;
+  const h=headers[Number($('columnSelect').value)||0], vals=filtered.map(r=>r[h]).filter(v=>!isBlank(v));
+  const nums=vals.map(num), numeric=vals.length>0&&nums.filter(v=>v!==null).length/vals.length>=.8;
+  $('summaryName').textContent=h;
+  let stats=[];
+  if(numeric){
+    const a=nums.filter(v=>v!==null).sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0), mean=sum/a.length, median=a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2;
+    stats=[['Valid numbers',a.length],['Minimum',fmt(a[0])],['Maximum',fmt(a[a.length-1])],['Average',fmt(mean)],['Median',fmt(median)],['Range',fmt(a[a.length-1]-a[0])]];
+  }else{
+    const counts=new Map();vals.forEach(v=>counts.set(String(v),(counts.get(String(v))||0)+1));
+    const top=[...counts.entries()].sort((a,b)=>b[1]-a[1])[0];
+    stats=[['Non-empty values',vals.length],['Unique values',counts.size],['Most common',top?top[0]:'—'],['Occurrences',top?top[1]:0],['Blank values',filtered.length-vals.length]];
+  }
+  $('summaryList').innerHTML=stats.map(([k,v])=>`<div class="summary-item"><span>${escapeHtml(k)}</span><b>${escapeHtml(v)}</b></div>`).join('');
+  let labels=[],data=[];
+  if(numeric){
+    const a=nums.filter(v=>v!==null), min=Math.min(...a), max=Math.max(...a), bins=Math.min(10,Math.max(1,Math.ceil(Math.sqrt(a.length))));
+    if(min===max){labels=[fmt(min)];data=[a.length];}
+    else{const width=(max-min)/bins;data=Array(bins).fill(0);a.forEach(v=>data[Math.min(bins-1,Math.floor((v-min)/width))]++);labels=data.map((_,i)=>`${fmt(min+i*width)}–${fmt(i===bins-1?max:min+(i+1)*width)}`);}
+    $('chartNote').textContent='Numeric values are grouped into ranges to show their distribution.';
+  }else{
+    const counts=new Map();vals.forEach(v=>counts.set(String(v),(counts.get(String(v))||0)+1));
+    const top=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);labels=top.map(x=>x[0]);data=top.map(x=>x[1]);
+    $('chartNote').textContent='Showing up to 12 most common values. Blank cells are excluded.';
+  }
+  if(chart)chart.destroy();
+  const type=$('chartType').value;
+  chart=new Chart($('mainChart'),{type,data:{labels,datasets:[{label:h,data,backgroundColor:['#315eea','#5f82f2','#8da7fa','#b4c5ff','#5274c8','#7894d9','#9bb0e8','#c1cff2','#415ca3','#7087bc','#9eadd0','#c5cee0'],borderColor:'#315eea',borderWidth:1,borderRadius:type==='bar'?5:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='doughnut'},tooltip:{enabled:true}},scales:type==='doughnut'?{}:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{maxRotation:45,minRotation:0}}}}});
+}
+function fmt(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:3});}
+function csvEscape(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
+$('fileInput').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value='';});
+const dz=$('dropZone');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
+dz.addEventListener('drop',e=>{if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+$('globalSearch').addEventListener('input',e=>{const q=e.target.value.toLowerCase();filtered=rows.filter(r=>headers.some(h=>String(r[h]??'').toLowerCase().includes(q)));page=0;renderAll();});
+$('columnSelect').addEventListener('change',renderAnalysis);$('chartType').addEventListener('change',renderAnalysis);
+$('pageSize').addEventListener('change',()=>{page=0;renderTable();});
+$('prevPage').addEventListener('click',()=>{page--;renderTable();});$('nextPage').addEventListener('click',()=>{page++;renderTable();});
+$('downloadCsv').addEventListener('click',()=>download(filename+'-filtered.csv',[headers,...filtered.map(r=>headers.map(h=>r[h]??''))].map(r=>r.map(csvEscape).join(',')).join('\r\n'),'text/csv;charset=utf-8'));
+$('downloadReport').addEventListener('click',()=>{
+ const report={file:filename,created:new Date().toISOString(),rows:filtered.length,columns:headers.length,columnsSummary:headers.map(h=>{const v=filtered.map(r=>r[h]).filter(x=>!isBlank(x)),n=v.map(num).filter(x=>x!==null);return {column:h,nonEmpty:v.length,unique:new Set(v.map(String)).size,numeric:n.length>=v.length*.8&&n.length?{min:Math.min(...n),max:Math.max(...n),mean:n.reduce((a,b)=>a+b,0)/n.length}:null};})};
+ download(filename+'-analysis.json',JSON.stringify(report,null,2),'application/json');
+});
+$('resetBtn').addEventListener('click',()=>{if(chart)chart.destroy();headers=[];rows=[];filtered=[];page=0;$('workspace').hidden=true;$('fileInput').value='';setStatus('Your data stays in this browser. Nothing is uploaded to a server.');});
+</script>
+</body>
+</html>
