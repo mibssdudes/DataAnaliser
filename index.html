@@ -1,206 +1,589 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DataLens — Data Analyser</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<title>DataLens | Visual Data Analysis</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js/dist/tesseract.min.js"></script>
+
 <style>
-:root{--bg:#f4f7fb;--panel:#fff;--ink:#172033;--muted:#68758b;--line:#e3e9f2;--blue:#315eea;--blue2:#eaf0ff;--green:#16845b;--shadow:0 8px 28px rgba(28,45,80,.07)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
-header{background:#111d38;color:white;padding:25px max(22px,calc((100% - 1240px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}
-.brand{font-size:22px;font-weight:800;letter-spacing:-.5px}.brand span{color:#8eacff}.tag{color:#c4cee3;font-size:13px}
-main{max-width:1240px;margin:28px auto;padding:0 20px 60px}.intro{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:20px}.intro h1{font-size:27px;margin:0 0 4px;letter-spacing:-.7px}.intro p{margin:0;color:var(--muted)}
-button,.btn{border:0;border-radius:10px;padding:10px 15px;background:var(--blue);color:white;font-weight:700;cursor:pointer;font-size:14px}button.secondary{background:#eef2f8;color:#27344d}button:disabled{opacity:.45;cursor:not-allowed}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
-.upload{border:2px dashed #bdc9df;border-radius:14px;text-align:center;padding:27px 15px;background:#fbfcff;transition:.15s}.upload.drag{background:var(--blue2);border-color:var(--blue)}.upload strong{display:block;font-size:17px}.upload p{color:var(--muted);margin:5px 0 14px}.upload input{display:none}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar input,.toolbar select,.controls select,.controls input{border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:white;color:var(--ink);font:inherit;min-width:0}
-.toolbar input{flex:1;min-width:180px}.file-meta{color:var(--muted);font-size:13px;margin-top:12px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.metric{background:white;border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:var(--shadow)}.metric .label{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}.metric .value{font-size:25px;font-weight:800;margin-top:5px;overflow-wrap:anywhere}.metric .sub{font-size:12px;color:var(--muted)}
-.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.section-head h2{font-size:17px;margin:0}.section-head small{color:var(--muted)}
-.controls{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
-.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px;max-height:440px}table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}th{position:sticky;top:0;background:#f5f7fb;color:#536078;z-index:1}tr:last-child td{border-bottom:0}td.num{text-align:right;font-variant-numeric:tabular-nums}
-.analysis-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}.chart-box{height:300px;position:relative}.summary-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.summary-item{padding:12px;background:#f6f8fc;border-radius:10px}.summary-item span{display:block;color:var(--muted);font-size:12px}.summary-item b{font-size:17px;overflow-wrap:anywhere}
-.notice{padding:12px 14px;background:#f0f5ff;color:#304a88;border-radius:10px;font-size:13px;margin-top:12px}.empty{color:var(--muted);text-align:center;padding:28px 12px}.footer{text-align:center;color:var(--muted);font-size:12px;margin-top:25px}
-@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.analysis-grid{grid-template-columns:1fr}.intro{align-items:start;flex-direction:column}}
-@media(max-width:480px){main{padding:0 12px 35px}.panel{padding:14px}.grid{gap:9px}.metric{padding:12px}.metric .value{font-size:21px}header{padding:18px 15px}.tag{display:none}}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f6fb;
+  color: #17233b;
+}
+header {
+  background: #101d35;
+  color: white;
+  padding: 24px 7%;
+}
+header h1 { margin: 0; font-size: 28px; }
+header p { margin: 7px 0 0; color: #bdc9dd; }
+main { max-width: 1150px; margin: 30px auto; padding: 0 20px; }
+h2 { margin-top: 0; }
+.panel {
+  background: white;
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 18px #17233b0c;
+}
+.imports {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 15px;
+}
+.import-box {
+  border: 2px dashed #b9c8df;
+  border-radius: 13px;
+  padding: 25px 15px;
+  text-align: center;
+  background: #f8faff;
+}
+.import-box strong { display: block; margin-bottom: 9px; }
+input[type=file] { max-width: 100%; margin-top: 12px; }
+button, select {
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 16px;
+  background: #2463eb;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+button:hover { background: #174bc0; }
+button.secondary { background: #e8efff; color: #2457bd; }
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+  gap: 14px;
+}
+.metric {
+  background: #f0f5ff;
+  padding: 19px;
+  border-radius: 12px;
+}
+.metric span { color: #65738b; font-size: 13px; }
+.metric h2 { margin: 8px 0 0; font-size: 27px; }
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+select { background: #edf2fc; color: #17233b; }
+input[type=search] {
+  padding: 12px;
+  border: 1px solid #ccd5e4;
+  border-radius: 9px;
+  min-width: 190px;
+}
+#chartWrap { height: 340px; position: relative; }
+#status { color: #53647d; font-size: 14px; }
+#insights { line-height: 1.7; }
+table { width: 100%; border-collapse: collapse; }
+th,td { text-align: left; padding: 10px; border-bottom: 1px solid #e8edf4; }
+th { background: #f3f6fb; }
+.table-wrap { overflow-x: auto; }
+footer { text-align: center; padding: 25px; color: #78869c; font-size: 13px; }
 </style>
 </head>
+
 <body>
-<header><div class="brand">Data<span>Lens</span></div><div class="tag">A private, browser-based data workspace</div></header>
+<header>
+  <h1>◈ DataLens</h1>
+  <p>Turn your information into clear, useful insights.</p>
+</header>
+
 <main>
-  <div class="intro"><div><h1>Data analyser</h1><p>Import a file, explore the rows, and turn your data into useful insights.</p></div><button class="secondary" id="resetBtn">Clear workspace</button></div>
   <section class="panel">
-    <div class="upload" id="dropZone">
-      <strong>Drop a data file here</strong>
-      <p>or choose a file from your device</p>
-      <label class="btn" for="fileInput">Choose file</label>
-      <input id="fileInput" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json">
-      <div class="file-meta">Supported: CSV, TSV, TXT, Excel (.xlsx, .xls), JSON</div>
+    <h2>Import your data</h2>
+    <p>Upload a spreadsheet, data file or screenshot to get started.</p>
+
+    <div class="imports">
+      <div class="import-box">
+        <strong>📊 Spreadsheet or data file</strong>
+        <p>CSV, Excel, JSON or text files</p>
+        <input type="file" id="dataFile"
+          accept=".csv,.xlsx,.xls,.json,.txt,.tsv">
+      </div>
+
+      <div class="import-box">
+        <strong>🖼️ Screenshot or image</strong>
+        <p>Recognise text and numbers in an image</p>
+        <input type="file" id="imageFile"
+          accept="image/*">
+      </div>
     </div>
-    <div class="file-meta" id="status">Your data stays in this browser. Nothing is uploaded to a server.</div>
+    <p id="status">Waiting for a file...</p>
   </section>
 
-  <div id="workspace" hidden>
-    <div class="toolbar panel">
-      <input id="globalSearch" placeholder="Search all columns…">
-      <button class="secondary" id="downloadCsv">Download filtered CSV</button>
-      <button class="secondary" id="downloadReport">Export analysis report</button>
-    </div>
-    <div class="grid">
-      <div class="metric"><div class="label">Rows</div><div class="value" id="rowsMetric">—</div><div class="sub">In the imported dataset</div></div>
-      <div class="metric"><div class="label">Columns</div><div class="value" id="colsMetric">—</div><div class="sub">Detected fields</div></div>
-      <div class="metric"><div class="label">Missing cells</div><div class="value" id="missingMetric">—</div><div class="sub" id="missingSub">Blank or empty values</div></div>
-      <div class="metric"><div class="label">Duplicate rows</div><div class="value" id="duplicateMetric">—</div><div class="sub">Exact row matches</div></div>
-    </div>
-
-    <div class="analysis-grid">
-      <section class="panel">
-        <div class="section-head"><h2>Visual analysis</h2><small>Choose a column to explore</small></div>
-        <div class="controls">
-          <label>Column<select id="columnSelect"></select></label>
-          <label>Chart type<select id="chartType"><option value="bar">Bar</option><option value="line">Line</option><option value="doughnut">Doughnut</option></select></label>
-        </div>
-        <div class="chart-box"><canvas id="mainChart"></canvas></div>
-        <div class="notice" id="chartNote">Numeric columns are grouped into ranges. Text columns show the most common values.</div>
-      </section>
-      <section class="panel">
-        <div class="section-head"><h2>Column summary</h2><small id="summaryName"></small></div>
-        <div class="summary-list" id="summaryList"><div class="empty">Import a file to see statistics.</div></div>
-        <div class="notice">For numeric columns, statistics include minimum, maximum, mean and median. Text columns show distinct and most common values.</div>
-      </section>
-    </div>
-
-    <section class="panel">
-      <div class="section-head"><h2>Data preview</h2><small id="previewCount"></small></div>
-      <div class="controls">
-        <label>Rows per page<select id="pageSize"><option>25</option><option>50</option><option>100</option><option>250</option></select></label>
-        <button class="secondary" id="prevPage">Previous</button><button class="secondary" id="nextPage">Next</button>
-        <span id="pageLabel" class="file-meta"></span>
+  <section class="panel">
+    <h2>Your overview</h2>
+    <div class="metrics">
+      <div class="metric">
+        <span>Data entries</span>
+        <h2 id="entryCount">0</h2>
       </div>
-      <div class="table-wrap"><table id="dataTable"></table></div>
-    </section>
-  </div>
-  <div class="footer">DataLens • Your files are processed locally in your browser. Keep your own backup of important source files.</div>
+      <div class="metric">
+        <span>Numeric columns</span>
+        <h2 id="columnCount">0</h2>
+      </div>
+      <div class="metric">
+        <span>Average value</span>
+        <h2 id="averageValue">—</h2>
+      </div>
+      <div class="metric">
+        <span>Total value</span>
+        <h2 id="totalValue">—</h2>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Visualise your data</h2>
+    <div class="controls">
+      <label for="chartType">Chart:</label>
+      <select id="chartType">
+        <option value="bar">Bar chart</option>
+        <option value="line">Line chart</option>
+        <option value="pie">Pie chart</option>
+        <option value="doughnut">Doughnut chart</option>
+      </select>
+
+      <label for="valueColumn">Values:</label>
+      <select id="valueColumn">
+        <option value="">No data loaded</option>
+      </select>
+
+      <label for="labelColumn">Labels:</label>
+      <select id="labelColumn">
+        <option value="">Automatic</option>
+      </select>
+    </div>
+    <div id="chartWrap">
+      <canvas id="dataChart"></canvas>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Data insights</h2>
+    <div id="insights">
+      Import a file to discover patterns, totals and averages.
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Explore your data</h2>
+    <div class="controls">
+      <input type="search" id="search"
+        placeholder="Search your data...">
+      <button class="secondary" id="downloadButton">
+        Download filtered CSV
+      </button>
+    </div>
+    <div class="table-wrap" id="tableArea">
+      <p>Your imported data will appear here.</p>
+    </div>
+  </section>
 </main>
+
+<footer>
+  DataLens · Your files are processed in your browser.
+</footer>
+
 <script>
+let rows = [];
+let headers = [];
+let chart = null;
+let filteredRows = [];
+
 const $ = id => document.getElementById(id);
-let headers=[], rows=[], filtered=[], page=0, chart=null, filename='data';
-const isBlank = v => v === null || v === undefined || String(v).trim() === '';
-const display = v => isBlank(v) ? '—' : String(v);
-const num = v => { if(typeof v==='number' && Number.isFinite(v)) return v; if(typeof v!=='string') return null; const s=v.trim().replace(/[$,%£€,\s]/g,''); if(!s || !/^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(s)) return null; const n=Number(s); return Number.isFinite(n)?n:null; };
-function setStatus(s){$('status').textContent=s;}
-function parseCSV(text, delimiter){
-  const out=[]; let row=[], cell='', quoted=false;
-  for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];
-    if(c==='"' && quoted && n==='"'){cell+='"';i++;}
-    else if(c==='"'){quoted=!quoted;}
-    else if(c===delimiter && !quoted){row.push(cell);cell='';}
-    else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&n==='\n')i++;row.push(cell);out.push(row);row=[];cell='';}
-    else cell+=c;
-  }
-  if(cell.length||row.length){row.push(cell);out.push(row);}
-  return out.filter(r=>r.some(x=>String(x).trim()!==''));
+
+function setStatus(message) {
+  $("status").textContent = message;
 }
-function normalise(records){
-  if(!records.length) throw Error('The file appears to be empty.');
-  if(Array.isArray(records[0]) && records[0].length){
-    headers=records[0].map((h,i)=>String(isBlank(h)?`Column ${i+1}`:h).trim());
-    rows=records.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??''])));
-  } else if(typeof records[0]==='object' && records[0]!==null){
-    headers=[...new Set(records.flatMap(o=>Object.keys(o)))];
-    rows=records.map(o=>Object.fromEntries(headers.map(h=>[h,o[h]??''])));
-  } else throw Error('Could not recognise a table. Please use CSV, Excel or JSON records.');
-  if(!headers.length) throw Error('No columns were found.');
-}
-async function loadFile(file){
-  try{
-    filename=file.name.replace(/\.[^.]+$/,'')||'data';
-    const ext=file.name.split('.').pop().toLowerCase(); let records;
-    if(['xlsx','xls'].includes(ext)){
-      if(!window.XLSX) throw Error('Excel support could not load. Check your internet connection and try again.');
-      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}); const sheet=wb.Sheets[wb.SheetNames[0]];
-      records=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
-    }else if(ext==='json'){
-      const parsed=JSON.parse(await file.text());
-      records=Array.isArray(parsed)?parsed:(Array.isArray(parsed.data)?parsed.data:null);
-      if(!records) throw Error('JSON should contain an array of records, or an object with a data array.');
-    }else{
-      const txt=await file.text(); const first=txt.split(/\r?\n/)[0]||'';
-      const candidates=[',',';','\t']; const delimiter=candidates.sort((a,b)=>first.split(b).length-first.split(a).length)[0];
-      records=parseCSV(txt,delimiter);
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (!lines.length) return [];
+
+  const delimiter = lines[0].includes("\t") ? "\t" :
+                   lines[0].includes(";") ? ";" : ",";
+
+  return lines.map(line => {
+    const result = [];
+    let value = "";
+    let quoted = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        if (quoted && line[i + 1] === '"') {
+          value += '"';
+          i++;
+        } else {
+          quoted = !quoted;
+        }
+      } else if (char === delimiter && !quoted) {
+        result.push(value.trim());
+        value = "";
+      } else {
+        value += char;
+      }
     }
-    normalise(records); page=0; $('workspace').hidden=false; $('globalSearch').value='';
-    $('rowsMetric').textContent=rows.length.toLocaleString(); $('colsMetric').textContent=headers.length.toLocaleString();
-    const missing=rows.reduce((sum,r)=>sum+headers.filter(h=>isBlank(r[h])).length,0);
-    const dup=rows.length-new Set(rows.map(r=>JSON.stringify(headers.map(h=>r[h])))).size;
-    $('missingMetric').textContent=missing.toLocaleString(); $('missingSub').textContent=`${((missing/(Math.max(1,rows.length*headers.length)))*100).toFixed(1)}% of all cells`;
-    $('duplicateMetric').textContent=dup.toLocaleString();
-    $('columnSelect').innerHTML=headers.map((h,i)=>`<option value="${i}">${escapeHtml(h)}</option>`).join('');
-    filtered=[...rows]; renderAll();
-    setStatus(`Loaded ${file.name} • ${rows.length.toLocaleString()} rows • ${headers.length} columns`);
-  }catch(e){setStatus('Import failed: '+e.message);}
+
+    result.push(value.trim());
+    return result;
+  });
 }
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function renderAll(){renderTable();renderAnalysis();}
-function renderTable(){
-  const size=Number($('pageSize').value), pages=Math.max(1,Math.ceil(filtered.length/size)); page=Math.min(page,pages-1);
-  const start=page*size, subset=filtered.slice(start,start+size);
-  $('previewCount').textContent=`${filtered.length.toLocaleString()} matching rows`;
-  $('pageLabel').textContent=`Page ${page+1} of ${pages}`;
-  $('prevPage').disabled=page===0;$('nextPage').disabled=page>=pages-1;
-  $('dataTable').innerHTML='<thead><tr>'+headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')+'</tr></thead><tbody>'+
-    (subset.length?subset.map(r=>'<tr>'+headers.map(h=>`<td>${escapeHtml(display(r[h]))}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${headers.length}" class="empty">No matching rows.</td></tr>`)+
-    '</tbody>';
-}
-function renderAnalysis(){
-  if(!headers.length)return;
-  const h=headers[Number($('columnSelect').value)||0], vals=filtered.map(r=>r[h]).filter(v=>!isBlank(v));
-  const nums=vals.map(num), numeric=vals.length>0&&nums.filter(v=>v!==null).length/vals.length>=.8;
-  $('summaryName').textContent=h;
-  let stats=[];
-  if(numeric){
-    const a=nums.filter(v=>v!==null).sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0), mean=sum/a.length, median=a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2;
-    stats=[['Valid numbers',a.length],['Minimum',fmt(a[0])],['Maximum',fmt(a[a.length-1])],['Average',fmt(mean)],['Median',fmt(median)],['Range',fmt(a[a.length-1]-a[0])]];
-  }else{
-    const counts=new Map();vals.forEach(v=>counts.set(String(v),(counts.get(String(v))||0)+1));
-    const top=[...counts.entries()].sort((a,b)=>b[1]-a[1])[0];
-    stats=[['Non-empty values',vals.length],['Unique values',counts.size],['Most common',top?top[0]:'—'],['Occurrences',top?top[1]:0],['Blank values',filtered.length-vals.length]];
+
+function loadMatrix(matrix) {
+  if (!matrix || matrix.length < 2) {
+    setStatus("This file does not contain enough data.");
+    return;
   }
-  $('summaryList').innerHTML=stats.map(([k,v])=>`<div class="summary-item"><span>${escapeHtml(k)}</span><b>${escapeHtml(v)}</b></div>`).join('');
-  let labels=[],data=[];
-  if(numeric){
-    const a=nums.filter(v=>v!==null), min=Math.min(...a), max=Math.max(...a), bins=Math.min(10,Math.max(1,Math.ceil(Math.sqrt(a.length))));
-    if(min===max){labels=[fmt(min)];data=[a.length];}
-    else{const width=(max-min)/bins;data=Array(bins).fill(0);a.forEach(v=>data[Math.min(bins-1,Math.floor((v-min)/width))]++);labels=data.map((_,i)=>`${fmt(min+i*width)}–${fmt(i===bins-1?max:min+(i+1)*width)}`);}
-    $('chartNote').textContent='Numeric values are grouped into ranges to show their distribution.';
-  }else{
-    const counts=new Map();vals.forEach(v=>counts.set(String(v),(counts.get(String(v))||0)+1));
-    const top=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);labels=top.map(x=>x[0]);data=top.map(x=>x[1]);
-    $('chartNote').textContent='Showing up to 12 most common values. Blank cells are excluded.';
+
+  headers = matrix[0].map((h, i) => String(h || "Column " + (i + 1)));
+
+  rows = matrix.slice(1)
+    .filter(row => row.some(value => value !== "" && value != null))
+    .map(row => {
+      const object = {};
+      headers.forEach((header, i) => {
+        object[header] = row[i] ?? "";
+      });
+      return object;
+    });
+
+  if (!rows.length) {
+    setStatus("No data rows were found.");
+    return;
   }
-  if(chart)chart.destroy();
-  const type=$('chartType').value;
-  chart=new Chart($('mainChart'),{type,data:{labels,datasets:[{label:h,data,backgroundColor:['#315eea','#5f82f2','#8da7fa','#b4c5ff','#5274c8','#7894d9','#9bb0e8','#c1cff2','#415ca3','#7087bc','#9eadd0','#c5cee0'],borderColor:'#315eea',borderWidth:1,borderRadius:type==='bar'?5:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='doughnut'},tooltip:{enabled:true}},scales:type==='doughnut'?{}:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{maxRotation:45,minRotation:0}}}}});
+
+  $("search").value = "";
+  filteredRows = [...rows];
+
+  updateDashboard();
+  setStatus("Successfully loaded " + rows.length + " entries.");
 }
-function fmt(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:3});}
-function csvEscape(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
-function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
-$('fileInput').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value='';});
-const dz=$('dropZone');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
-['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
-dz.addEventListener('drop',e=>{if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
-$('globalSearch').addEventListener('input',e=>{const q=e.target.value.toLowerCase();filtered=rows.filter(r=>headers.some(h=>String(r[h]??'').toLowerCase().includes(q)));page=0;renderAll();});
-$('columnSelect').addEventListener('change',renderAnalysis);$('chartType').addEventListener('change',renderAnalysis);
-$('pageSize').addEventListener('change',()=>{page=0;renderTable();});
-$('prevPage').addEventListener('click',()=>{page--;renderTable();});$('nextPage').addEventListener('click',()=>{page++;renderTable();});
-$('downloadCsv').addEventListener('click',()=>download(filename+'-filtered.csv',[headers,...filtered.map(r=>headers.map(h=>r[h]??''))].map(r=>r.map(csvEscape).join(',')).join('\r\n'),'text/csv;charset=utf-8'));
-$('downloadReport').addEventListener('click',()=>{
- const report={file:filename,created:new Date().toISOString(),rows:filtered.length,columns:headers.length,columnsSummary:headers.map(h=>{const v=filtered.map(r=>r[h]).filter(x=>!isBlank(x)),n=v.map(num).filter(x=>x!==null);return {column:h,nonEmpty:v.length,unique:new Set(v.map(String)).size,numeric:n.length>=v.length*.8&&n.length?{min:Math.min(...n),max:Math.max(...n),mean:n.reduce((a,b)=>a+b,0)/n.length}:null};})};
- download(filename+'-analysis.json',JSON.stringify(report,null,2),'application/json');
+
+$("dataFile").addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  setStatus("Reading " + file.name + "...");
+
+  try {
+    const extension = file.name.split(".").pop().toLowerCase();
+
+    if (["xlsx", "xls"].includes(extension)) {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      loadMatrix(XLSX.utils.sheet_to_json(sheet, {
+        header: 1, defval: ""
+      }));
+    } else if (extension === "json") {
+      const data = JSON.parse(await file.text());
+      if (Array.isArray(data) && data.length) {
+        if (typeof data[0] === "object" && !Array.isArray(data[0])) {
+          headers = Object.keys(data[0]);
+          rows = data;
+          filteredRows = [...rows];
+          updateDashboard();
+          setStatus("Successfully loaded " + rows.length + " entries.");
+        } else {
+          loadMatrix(data);
+        }
+      } else {
+        setStatus("The JSON file must contain a list of records.");
+      }
+    } else {
+      loadMatrix(parseCSV(await file.text()));
+    }
+  } catch (error) {
+    console.error(error);
+    setStatus("Sorry, this file could not be read.");
+  }
 });
-$('resetBtn').addEventListener('click',()=>{if(chart)chart.destroy();headers=[];rows=[];filtered=[];page=0;$('workspace').hidden=true;$('fileInput').value='';setStatus('Your data stays in this browser. Nothing is uploaded to a server.');});
+
+function numericColumns() {
+  return headers.filter(header => {
+    const values = rows.map(row => toNumber(row[header]));
+    return values.filter(value => value !== null).length > 0;
+  });
+}
+
+function toNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (value === null || value === undefined || value === "") return null;
+
+  const cleaned = String(value).replace(/[$£€,%\s,]/g, "");
+  if (!cleaned || !/^[-+]?\d*\.?\d+$/.test(cleaned)) return null;
+
+  const number = Number(cleaned);
+  return Number.isFinite(number) ? number : null;
+}
+
+function updateDashboard() {
+  const numeric = numericColumns();
+  $("entryCount").textContent = rows.length;
+  $("columnCount").textContent = numeric.length;
+
+  const firstColumn = numeric[0];
+  if (firstColumn) {
+    const values = rows.map(r => toNumber(r[firstColumn]))
+      .filter(v => v !== null);
+    const total = values.reduce((a,b) => a+b, 0);
+    const average = total / values.length;
+
+    $("averageValue").textContent = average.toLocaleString(
+      undefined, { maximumFractionDigits: 2 }
+    );
+    $("totalValue").textContent = total.toLocaleString(
+      undefined, { maximumFractionDigits: 2 }
+    );
+  } else {
+    $("averageValue").textContent = "—";
+    $("totalValue").textContent = "—";
+  }
+
+  populateSelectors(numeric);
+  updateChart();
+  updateInsights();
+  updateTable();
+}
+
+function populateSelectors(numeric) {
+  $("valueColumn").innerHTML = numeric.length
+    ? numeric.map(h => `<option>${escapeHTML(h)}</option>`).join("")
+    : `<option value="">No numeric columns</option>`;
+
+  const labels = headers.filter(h => !numeric.includes(h));
+  $("labelColumn").innerHTML =
+    `<option value="">Automatic</option>` +
+    headers.map(h => `<option>${escapeHTML(h)}</option>`).join("");
+
+  if (!labels.length && headers.length > 0) {
+    $("labelColumn").value = headers[0];
+  } else if (labels.length) {
+    $("labelColumn").value = labels[0];
+  }
+}
+
+function updateChart() {
+  const valueKey = $("valueColumn").value;
+  const labelKey = $("labelColumn").value;
+  const type = $("chartType").value;
+
+  if (!valueKey || !filteredRows.length) {
+    if (chart) chart.destroy();
+    chart = null;
+    return;
+  }
+
+  const points = filteredRows
+    .map((row, i) => ({
+      label: labelKey && row[labelKey] !== undefined
+        ? String(row[labelKey])
+        : "Entry " + (i + 1),
+      value: toNumber(row[valueKey])
+    }))
+    .filter(point => point.value !== null)
+    .slice(0, 100);
+
+  if (chart) chart.destroy();
+
+  chart = new Chart($("dataChart"), {
+    type,
+    data: {
+      labels: points.map(p => p.label),
+      datasets: [{
+        label: valueKey,
+        data: points.map(p => p.value),
+        backgroundColor: [
+          "#3478f6", "#54b4c9", "#8b79df",
+          "#f2ae54", "#52b58c", "#e4779b",
+          "#7089a9", "#b4a1e8"
+        ],
+        borderColor: "#3478f6",
+        borderWidth: 2,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: type === "pie" || type === "doughnut" }
+      },
+      scales: type === "pie" || type === "doughnut"
+        ? {}
+        : { y: { beginAtZero: true } }
+    }
+  });
+}
+
+function updateInsights() {
+  const numeric = numericColumns();
+
+  if (!rows.length) return;
+
+  let html = "<ul>";
+
+  numeric.forEach(header => {
+    const values = rows.map(r => toNumber(r[header]))
+      .filter(v => v !== null);
+
+    if (!values.length) return;
+
+    const total = values.reduce((a,b) => a+b, 0);
+    const average = total / values.length;
+    const highest = Math.max(...values);
+    const lowest = Math.min(...values);
+
+    html += `<li><strong>${escapeHTML(header)}</strong>: `;
+    html += `total ${formatNumber(total)}, `;
+    html += `average ${formatNumber(average)}, `;
+    html += `highest ${formatNumber(highest)}, `;
+    html += `lowest ${formatNumber(lowest)}.</li>`;
+  });
+
+  html += "</ul>";
+
+  if (!numeric.length) {
+    html = "No numeric columns were detected. Try importing a spreadsheet with number values.";
+  }
+
+  $("insights").innerHTML = html;
+}
+
+function formatNumber(value) {
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function updateTable() {
+  if (!headers.length) return;
+
+  const visible = filteredRows.slice(0, 200);
+
+  let html = "<table><thead><tr>";
+  headers.forEach(h => html += `<th>${escapeHTML(h)}</th>`);
+  html += "</tr></thead><tbody>";
+
+  visible.forEach(row => {
+    html += "<tr>";
+    headers.forEach(h => {
+      html += `<td>${escapeHTML(row[h] ?? "")}</td>`;
+    });
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+
+  if (filteredRows.length > 200) {
+    html += `<p>Showing 200 of ${filteredRows.length} matching entries.</p>`;
+  }
+
+  $("tableArea").innerHTML = html;
+}
+
+$("search").addEventListener("input", () => {
+  const term = $("search").value.toLowerCase();
+
+  filteredRows = rows.filter(row =>
+    headers.some(h => String(row[h] ?? "").toLowerCase().includes(term))
+  );
+
+  updateChart();
+  updateTable();
+});
+
+$("chartType").addEventListener("change", updateChart);
+$("valueColumn").addEventListener("change", updateChart);
+$("labelColumn").addEventListener("change", updateChart);
+
+$("downloadButton").addEventListener("click", () => {
+  if (!filteredRows.length) {
+    alert("There is no data to download.");
+    return;
+  }
+
+  const csv = [
+    headers.map(h => JSON.stringify(h)).join(","),
+    ...filteredRows.map(row =>
+      headers.map(h => JSON.stringify(String(row[h] ?? ""))).join(",")
+    )
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "datalens-filtered-data.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+// Screenshot text recognition
+$("imageFile").addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!window.Tesseract) {
+    setStatus("Text recognition could not load. Check your internet connection.");
+    return;
+  }
+
+  setStatus("Recognising text in your image. This may take a little while...");
+
+  try {
+    const result = await Tesseract.recognize(file, "eng", {
+      logger: progress => {
+        if (progress.status === "recognizing text") {
+          setStatus("Reading image: " +
+            Math.round(progress.progress * 100) + "%");
+        }
+      }
+    });
+
+    const text = result.data.text;
+    const lines = text.split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+
+    const matrix = lines.map(line =>
+      line.split(/\t+|\s{2,}/).map(cell => cell.trim())
+    );
+
+    if (matrix.length >= 2 && matrix[0].length >= 2) {
+      loadMatrix(matrix);
+      setStatus("Image text recognised. Please check the extracted table for errors.");
+    } else {
+      $("insights").textContent =
+        "Text found in the image:\n" + text;
+      setStatus("Text recognised, but a structured table could not be detected. Check the extracted text in the insights section.");
+    }
+  } catch (error) {
+    console.error(error);
+    setStatus("Sorry, the image could not be processed.");
+  }
+});
 </script>
 </body>
 </html>
